@@ -163,7 +163,7 @@ jobs:
         id: cache-cmake-restore
         with:
           path: build
-          key: ${{ inputs.build_type }}-cmake-${{ hashFiles('CMakeLists.txt') }}
+          key: ${{ inputs.build_type }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
       - name: Restore modules cache
         uses: actions/cache/restore@v3
         id: cache-modules-restore
