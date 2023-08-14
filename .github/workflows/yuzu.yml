@@ -164,6 +164,12 @@ jobs:
         with:
           path: build
           key: ${{ inputs.build_type }}-cmake-${{ hashFiles('CMakeLists.txt') }}
+      - name: Restore modules cache
+        uses: actions/cache/restore@v3
+        id: cache-modules-restore
+        with:
+          path: externals
+          key: ${{ inputs.build_type }}-modules-${{ hashFiles('.git/modules/**/HEAD') }}
       - name: Configure
         env:
           CC: cl.exe
@@ -181,6 +187,12 @@ jobs:
         with:
           path: build
           key: ${{ steps.cache-cmake-restore.outputs.cache-primary-key }}
+      - name: Save modules cache
+        uses: actions/cache/save@v3
+        if: steps.cache-modules-restore.outputs.cache-hit != 'true'
+        with:
+          path: build
+          key: ${{ steps.cache-modules-restore.outputs.cache-primary-key }}
       - name: Build
         run: msbuild "build/yuzu.sln" /m /p:Configuration=Release
       - name: Pack 7z
