@@ -119,6 +119,7 @@ jobs:
           foreach ($file in $patchFiles) {
               git apply "$file"
           }
+          git submodule status > submodule.status
       - name: Configure git
         if: ${{ inputs.build_type == 'yuzu-ea' }}
         run: |
@@ -158,14 +159,17 @@ jobs:
         uses: actions/cache/restore@v3
         id: cache-modules-restore
         with:
-          path: externals
-          key: ${{ inputs.build_type }}-modules-${{ hashFiles('.gitmodules') }}
+          path: |
+            externals
+            .git\modules
+            .git\config
+          key: ${{ inputs.build_type }}-modules-${{ hashFiles('submodule.status') }}
       - name: Restore cmake cache
         uses: actions/cache/restore@v3
         id: cache-cmake-restore
         with:
           path: build
-          key: ${{ inputs.build_type }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+          key: ${{ inputs.build_type }}-cmake-${{ hashFiles('CMakeLists.txt', 'src/**/CMakeLists.txt') }}
       - name: Configure
         env:
           CC: cl.exe
@@ -181,7 +185,10 @@ jobs:
         uses: actions/cache/save@v3
         if: steps.cache-modules-restore.outputs.cache-hit != 'true'
         with:
-          path: externals
+          path: |
+            externals
+            .git\modules
+            .git\config
           key: ${{ steps.cache-modules-restore.outputs.cache-primary-key }}
       - name: Save cmake cache
         uses: actions/cache/save@v3
