@@ -165,7 +165,7 @@ jobs:
         id: cache-modules-restore
         with:
           path: externals
-          key: ${{ inputs.build_type }}-modules-${{ hashFiles('.git/modules/**/HEAD') }}
+          key: ${{ inputs.build_type }}-modules-${{ hashFiles('.gitmodules') }}
       - name: Configure
         env:
           CC: cl.exe
@@ -187,7 +187,7 @@ jobs:
         uses: actions/cache/save@v3
         if: steps.cache-modules-restore.outputs.cache-hit != 'true'
         with:
-          path: build
+          path: externals
           key: ${{ steps.cache-modules-restore.outputs.cache-primary-key }}
       - name: Build
         run: msbuild "build/yuzu.sln" /m /p:Configuration=Release
