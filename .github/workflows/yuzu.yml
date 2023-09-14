@@ -167,10 +167,10 @@ jobs:
           key: modules2-${{ hashFiles('submodule.status') }}
       - name: Restore cmake cache
         uses: actions/cache/restore@v3
-        id: cache-cmakeninja-restore
+        id: cache-cmake-restore
         with:
           path: build
-          key: cmakeninja-${{ hashFiles('CMakeLists.txt', 'src/**/CMakeLists.txt') }}
+          key: cmake3-${{ hashFiles('CMakeModules/*.cmake') }}
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
       - name: Configure
@@ -195,19 +195,10 @@ jobs:
           key: ${{ steps.cache-modules-restore.outputs.cache-primary-key }}
       - name: Save cmake cache
         uses: actions/cache/save@v3
-        if: steps.cache-cmakeninja-restore.outputs.cache-hit != 'true'
+        if: steps.cache-cmake-restore.outputs.cache-hit != 'true'
         with:
           path: build
-          key: ${{ steps.cache-cmakeninja-restore.outputs.cache-primary-key }}
-      - name: Pack pre-build
-        run: |
-          cd build
-          7z a -m0=lzma2 -mx=1 -ms=on ..\pre-build.7z *
-      - name: Upload pre-build
-        uses: actions/upload-artifact@v3
-        with:
-          name: prebuild
-          path: pre-build.7z
+          key: ${{ steps.cache-cmake-restore.outputs.cache-primary-key }}
       - name: Build
         run: cmake --build build -j2
       - name: Pack 7z
