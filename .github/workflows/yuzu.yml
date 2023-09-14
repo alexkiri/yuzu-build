@@ -100,7 +100,6 @@ jobs:
           git config --global rebase.autoStash true
           git config --global fetch.prune true
       - name: Install Vulkan SDK
-        shell: pwsh
         run: .\.ci\scripts\windows\install-vulkan-sdk.ps1
       - name: Merge PRs
         if: ${{ inputs.build_type == 'yuzu-ea' }}
@@ -129,7 +128,6 @@ jobs:
         with:
           path: 'patches'
       - name: Apply patches
-        shell: pwsh
         run: |
           if ("$env:OPTIMIZATION_FLAG" -eq "SSE") {
               git apply .\patches\optionalPatches\cmakelists_SSE.patch
@@ -202,7 +200,6 @@ jobs:
       - name: Build
         run: cmake --build build -j2
       - name: Pack 7z
-        shell: pwsh
         run: |
           .\.ci\scripts\windows\upload.ps1
           cd artifacts
@@ -215,7 +212,7 @@ jobs:
           name: yuzu-windows.7z
           path: yuzu-windows.7z
       - name: Create release
-        if: false
+        if: github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
           artifacts: "yuzu-windows.7z"
