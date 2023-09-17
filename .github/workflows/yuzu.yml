@@ -91,6 +91,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yuzu-emu/yuzu-mainline
+      - name: Post checkout
+        run: |
+          git submodule update --init externals/vcpkg
+          git submodule update --init --recursive --depth 1
       - name: Configure git
         if: ${{ inputs.build_type == 'yuzu-ea' }}
         run: |
@@ -166,8 +170,6 @@ jobs:
           CXX: cl.exe
         run: |
           glslangValidator --version
-          git submodule update --init externals/vcpkg
-          git submodule update --init --recursive --depth 1
           mkdir build -ErrorAction SilentlyContinue
           cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="$env:YUZU_USE_QT_WEB_ENGINE" -DENABLE_COMPATIBILITY_LIST_DOWNLOAD=ON -DYUZU_ENABLE_COMPATIBILITY_REPORTING=OFF -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="$env:USE_DISCORD_PRESENCE" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION="early-access" -DCMAKE_BUILD_TYPE=Release -DYUZU_CRASH_DUMPS="$env:YUZU_CRASH_DUMPS" -DENABLE_CUBEB="$env:ENABLE_CUBEB" -DENABLE_LIBUSB="$env:ENABLE_LIBUSB" -DENABLE_WEB_SERVICE="$env:ENABLE_WEB_SERVICE" -DYUZU_ROOM="$env:YUZU_ROOM"
       - name: Save cmake cache
