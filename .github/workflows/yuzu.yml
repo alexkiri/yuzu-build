@@ -10,8 +10,12 @@ on:
         default: 'yuzu-ea'
         type: choice
         options: ['yuzu-ea', 'yuzu-mainline']
+      custom_prs:
+        description: 'comma separated list of PR IDs'
+        required: false
+        type: string
       optimization_flag:
-        description: 'OPTIMIZATION_FLAG'
+        description: 'CPU optimization flag'
         required: true
         default: 'AVX2'
         type: choice
@@ -23,37 +27,32 @@ on:
         - AVX512
         - none
       yuzu_use_qt_web_engine:
-        description: 'YUZU_USE_QT_WEB_ENGINE'
+        description: 'YUZU_USE_QT_WEB_ENGINE cmake flag'
         required: true
         default: false
         type: boolean
       use_discord_presence:
-        description: 'USE_DISCORD_PRESENCE'
+        description: 'USE_DISCORD_PRESENCE cmake flag'
         required: true
         default: false
         type: boolean
       enable_cubeb:
-        description: 'ENABLE_CUBEB'
+        description: 'ENABLE_CUBEB cmake flag'
         required: true
         default: false
         type: boolean
       enable_libusb:
-        description: 'ENABLE_LIBUSB'
+        description: 'ENABLE_LIBUSB cmake flag'
         required: true
         default: false
         type: boolean
       enable_web_service:
-        description: 'ENABLE_WEB_SERVICE'
+        description: 'ENABLE_WEB_SERVICE cmake flag'
         required: true
         default: false
         type: boolean
       yuzu_room:
-        description: 'YUZU_ROOM'
-        required: true
-        default: false
-        type: boolean
-      yuzu_crash_dumps:
-        description: 'YUZU_CRASH_DUMPS'
+        description: 'YUZU_ROOM cmake flag'
         required: true
         default: false
         type: boolean
@@ -69,16 +68,7 @@ jobs:
 
     runs-on: windows-2022
     env:
-          OPTIMIZATION_FLAG: ${{ inputs.optimization_flag }}
-          YUZU_USE_QT_WEB_ENGINE: ${{ inputs.yuzu_use_qt_web_engine }}
-          USE_DISCORD_PRESENCE: ${{ inputs.use_discord_presence }}
-          ENABLE_CUBEB: ${{ inputs.enable_cubeb }}
-          ENABLE_LIBUSB: ${{ inputs.enable_libusb }}
-          ENABLE_WEB_SERVICE: ${{ inputs.enable_web_service }}
-          YUZU_ROOM: ${{ inputs.yuzu_room }}
-          YUZU_CRASH_DUMPS: ${{ inputs.yuzu_crash_dumps }}
-          SHADOWFLICKERPATCH: ${{ inputs.shadowFlickerPatch }}
-          ZSTD_CLEVEL: 1
+      ZSTD_CLEVEL: 1
     steps:
       - name: Checkout yuzu-ea
         if: ${{ inputs.build_type == 'yuzu-ea' }}
@@ -117,14 +107,25 @@ jobs:
               order: "asc",
               per_page: 100
             }).then(res => res.data.items);
-            for (const pr of prs) {
+
+            const commaSeparatedPRs = "${{ inputs.custom_prs }}";
+            const prQuery = "type:pr+is:open+repo:yuzu-emu/yuzu+" + commaSeparatedPRs.split(',').map((n) => n.trim()).join('+');
+
+            const customPrs = await github.rest.search.issuesAndPullRequests({
+              q: prQuery,
+              sort: "updated",
+              order: "asc",
+              per_page: 100
+            }).then(res => res.data.items);
+
+            for (const pr of prs.concat(customPrs)) {
               console.log(`Will merge "${pr.title}" ${pr.pull_request.html_url}`);
               let pn = pr.number;
               await myExec(`git fetch "https://github.com/yuzu-emu/yuzu.git" "pull/${pn}/head:pr-${pn}" -f --no-recurse-submodules`);
-              await myExec(`git merge --squash "pr-${pn}"`)
-              await myExec(`git commit -m "${pr.title}" `)
+              await myExec(`git merge --squash "pr-${pn}"`);
+              await myExec(`git commit -m "${pr.title} [#${pn}]"`);
             };
-            let body = await myExec(`GIT_BRANCH=$(git name-rev --name-only HEAD) && git log origin/$GIT_BRANCH..$GIT_BRANCH --pretty=format:"- %s"`)
+            let body = await myExec(`GIT_BRANCH=$(git branch --show-current) && git log origin/$GIT_BRANCH..$GIT_BRANCH --pretty=format:"- %s"`);
             core.exportVariable("body",body);
             core.exportVariable("time",new Date().toISOString().slice(0,16))
       - name: Checkout patches
@@ -133,22 +134,22 @@ jobs:
           path: 'patches'
       - name: Apply patches
         run: |
-          if ("$env:OPTIMIZATION_FLAG" -eq "SSE") {
+          if ("${{ inputs.optimization_flag }}" -eq "SSE") {
               git apply .\patches\optionalPatches\cmakelists_SSE.patch
           }
-          if ("$env:OPTIMIZATION_FLAG" -eq "SSE2") {
+          if ("${{ inputs.optimization_flag }}" -eq "SSE2") {
               git apply .\patches\optionalPatches\cmakelists_SSE2.patch
           }
-          if ("$env:OPTIMIZATION_FLAG" -eq "AVX") {
+          if ("${{ inputs.optimization_flag }}" -eq "AVX") {
               git apply .\patches\optionalPatches\cmakelists_AVX.patch
           }
-          if ("$env:OPTIMIZATION_FLAG" -eq "AVX2") {
+          if ("${{ inputs.optimization_flag }}" -eq "AVX2") {
               git apply .\patches\optionalPatches\cmakelists_AVX2.patch
           }
-          if ("$env:OPTIMIZATION_FLAG" -eq "AVX512") {
+          if ("${{ inputs.optimization_flag }}" -eq "AVX512") {
               git apply .\patches\optionalPatches\cmakelists_AVX512.patch
           }
-          if ("$env:SHADOWFLICKERPATCH" -eq "true") {
+          if ("${{ inputs.shadowFlickerPatch }}" -eq "true") {
               git apply .\patches\optionalPatches\shadowFlicker.patch
           }
 
@@ -171,7 +172,7 @@ jobs:
         run: |
           glslangValidator --version
           mkdir build -ErrorAction SilentlyContinue
-          cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="$env:YUZU_USE_QT_WEB_ENGINE" -DENABLE_COMPATIBILITY_LIST_DOWNLOAD=ON -DYUZU_ENABLE_COMPATIBILITY_REPORTING=OFF -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="$env:USE_DISCORD_PRESENCE" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION="early-access" -DCMAKE_BUILD_TYPE=Release -DYUZU_CRASH_DUMPS="$env:YUZU_CRASH_DUMPS" -DENABLE_CUBEB="$env:ENABLE_CUBEB" -DENABLE_LIBUSB="$env:ENABLE_LIBUSB" -DENABLE_WEB_SERVICE="$env:ENABLE_WEB_SERVICE" -DYUZU_ROOM="$env:YUZU_ROOM"
+          cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="${{inputs.yuzu_use_qt_web_engine}}" -DENABLE_COMPATIBILITY_LIST_DOWNLOAD=ON -DYUZU_ENABLE_COMPATIBILITY_REPORTING=OFF -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="${{inputs.use_discord_presence}}" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION="early-access" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUBEB="${{inputs.enable_cubeb}}" -DENABLE_LIBUSB="${{inputs.enable_libusb}}" -DENABLE_WEB_SERVICE="${{inputs.enable_web_service}}" -DYUZU_ROOM="${{inputs.yuzu_room}}"
       - name: Save cmake cache
         uses: actions/cache/save@v3
         if: steps.cache-cmake-restore.outputs.cache-hit != 'true'
