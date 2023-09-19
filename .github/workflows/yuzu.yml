@@ -4,12 +4,11 @@ run-name: 'Build yuzu'
 on:
   workflow_dispatch:
     inputs:
-      build_type:
-        description: 'build type'
+      repo_source:
+        description: 'the source repository for the build. the default "yuzu-emu/yuzu" builds EA, "yuzu-emu/yuzu-mainline" builds mainline; any other repo fork can be used'
         required: true
-        default: 'yuzu-ea'
-        type: choice
-        options: ['yuzu-ea', 'yuzu-mainline']
+        default: 'yuzu-emu/yuzu'
+        type: string
       custom_prs:
         description: 'comma separated list of PR IDs'
         required: false
@@ -71,18 +70,18 @@ jobs:
       ZSTD_CLEVEL: 1
     steps:
       - name: Checkout yuzu-ea
-        if: ${{ inputs.build_type == 'yuzu-ea' }}
+        if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
         uses: actions/checkout@v4
         with:
-          repository: yuzu-emu/yuzu
+          repository: ${{ inputs.repo_source }}
           fetch-depth: 0
       - name: Checkout yuzu-mainline
-        if: ${{ inputs.build_type == 'yuzu-mainline' }}
+        if: ${{ inputs.repo_source == 'yuzu-emu/yuzu-mainline' }}
         uses: actions/checkout@v4
         with:
-          repository: yuzu-emu/yuzu-mainline
+          repository: ${{ inputs.repo_source }}
       - name: Configure git
-        if: ${{ inputs.build_type == 'yuzu-ea' }}
+        if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
         run: |
           git config --global user.email "yuzu@yuzu-emu.org"
           git config --global user.name "yuzubot"
@@ -92,7 +91,7 @@ jobs:
       - name: Install Vulkan SDK
         run: .\.ci\scripts\windows\install-vulkan-sdk.ps1
       - name: Merge PRs
-        if: ${{ inputs.build_type == 'yuzu-ea' }}
+        if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
         uses: actions/github-script@v6
         with: 
           script: |
@@ -105,7 +104,7 @@ jobs:
             }).then(res => res.data.items);
 
             let commaSeparatedPRs = "${{ inputs.custom_prs }}" || "4042";
-            const prQuery = "type:pr+repo:yuzu-emu/yuzu+" + commaSeparatedPRs.split(',').map((n) => n.trim()).join('+');
+            const prQuery = "type:pr+is:open+repo:yuzu-emu/yuzu+" + commaSeparatedPRs.split(',').map((n) => n.trim()).join('+');
 
             const customPrs = await github.rest.search.issuesAndPullRequests({
               q: prQuery,
