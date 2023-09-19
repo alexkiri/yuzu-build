@@ -81,10 +81,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yuzu-emu/yuzu-mainline
-      - name: Post checkout
-        run: |
-          git submodule update --init externals/vcpkg
-          git submodule update --init --recursive --depth 1
       - name: Configure git
         if: ${{ inputs.build_type == 'yuzu-ea' }}
         run: |
@@ -128,6 +124,10 @@ jobs:
             let body = await myExec(`GIT_BRANCH=$(git branch --show-current) && git log origin/$GIT_BRANCH..$GIT_BRANCH --pretty=format:"- %s"`);
             core.exportVariable("body",body);
             core.exportVariable("time",new Date().toISOString().slice(0,16))
+      - name: Init submodules
+        run: |
+          git submodule update --init externals/vcpkg
+          git submodule update --init --recursive --depth 1
       - name: Checkout patches
         uses: actions/checkout@v3
         with:
