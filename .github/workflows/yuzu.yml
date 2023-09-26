@@ -73,7 +73,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repo_source }}
-          fetch-depth: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' && 0 || 1 }}
+          fetch-depth: ${{ inputs.repo_source == 'yuzu-emu/yuzu-mainline' && 1 || 0 }}
       - name: Configure git
         if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
         run: |
