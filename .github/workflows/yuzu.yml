@@ -69,17 +69,11 @@ jobs:
     env:
       ZSTD_CLEVEL: 1
     steps:
-      - name: Checkout yuzu-ea
-        if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
+      - name: Checkout ${{ inputs.repo_source }}
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repo_source }}
-          fetch-depth: 0
-      - name: Checkout yuzu-mainline
-        if: ${{ inputs.repo_source == 'yuzu-emu/yuzu-mainline' }}
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.repo_source }}
+          fetch-depth: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' && 0 || 1 }}
       - name: Configure git
         if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
         run: |
@@ -171,7 +165,7 @@ jobs:
         run: |
           glslangValidator --version
           mkdir build -ErrorAction SilentlyContinue
-          cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="${{inputs.yuzu_use_qt_web_engine}}" -DENABLE_COMPATIBILITY_LIST_DOWNLOAD=ON -DYUZU_ENABLE_COMPATIBILITY_REPORTING=OFF -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="${{inputs.use_discord_presence}}" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION="early-access" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUBEB="${{inputs.enable_cubeb}}" -DENABLE_LIBUSB="${{inputs.enable_libusb}}" -DENABLE_WEB_SERVICE="${{inputs.enable_web_service}}" -DYUZU_ROOM="${{inputs.yuzu_room}}"
+          cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="${{inputs.yuzu_use_qt_web_engine}}" -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="${{inputs.use_discord_presence}}" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION=${{ inputs.repo_source == 'yuzu-emu/yuzu-mainline' && 'mainline' || 'early-access' }} -DGIT_BRANCH=${{ inputs.repo_source }} -DCMAKE_BUILD_TYPE=Release -DENABLE_CUBEB="${{inputs.enable_cubeb}}" -DENABLE_LIBUSB="${{inputs.enable_libusb}}" -DENABLE_WEB_SERVICE="${{inputs.enable_web_service}}" -DYUZU_ROOM="${{inputs.yuzu_room}}"
       - name: Save cmake cache
         uses: actions/cache/save@v3
         if: steps.cache-cmake-restore.outputs.cache-hit != 'true'
