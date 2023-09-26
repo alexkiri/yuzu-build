@@ -91,14 +91,14 @@ jobs:
           script: |
             const myExec = async (command) => await exec.getExecOutput('"C:\\Program Files\\Git\\bin\\bash.exe"',["-c",command],{silent: true}).then(result => result.stdout.trim()).catch(err => {console.log(err) ; return false })
             const prs = await github.rest.search.issuesAndPullRequests({
-              q: "type:pr+is:open+repo:yuzu-emu/yuzu+label:early-access-merge,mainline-merge+-label:android,android-merge",
+              q: "type:pr+is:open+draft:false+repo:yuzu-emu/yuzu+label:early-access-merge,mainline-merge+-label:android,android-merge",
               sort: "updated",
               order: "asc",
               per_page: 100
             }).then(res => res.data.items);
 
             let commaSeparatedPRs = "${{ inputs.custom_prs }}" || "4042";
-            const prQuery = "type:pr+is:open+repo:yuzu-emu/yuzu+" + commaSeparatedPRs.split(',').map((n) => n.trim()).join('+');
+            const prQuery = "type:pr+is:open+draft:false+repo:yuzu-emu/yuzu+" + commaSeparatedPRs.split(',').map((n) => n.trim()).join('+');
 
             const customPrs = await github.rest.search.issuesAndPullRequests({
               q: prQuery,
