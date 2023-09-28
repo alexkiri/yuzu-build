@@ -96,19 +96,37 @@ jobs:
               order: "asc",
               per_page: 100
             }).then(res => res.data.items);
+            const minPrs = prs.map(pr => ({
+              title: pr.title,
+              number: pr.number,
+              url: pr.pull_request.html_url,
+            }));
 
-            let commaSeparatedPRs = "${{ inputs.custom_prs }}" || "4042";
-            const prQuery = "type:pr+is:open+draft:false+repo:yuzu-emu/yuzu+" + commaSeparatedPRs.split(',').map((n) => n.trim()).join('+');
+            const customPrNumList = "${{ inputs.custom_prs }}".split(',').map((n) => n.trim());
+            const customPrPromies = await customPrNumList.map(function(num) {
+              return github.rest.pulls.get({
+                owner: "yuzu-emu",
+                repo: "yuzu",
+                pull_number: num,
+              })
+              .then(res => res.data)
+              .catch(err => {
+                if (err.status == 404) {
+                    return Promise.resolve(null);
+                } else {
+                    return Promise.reject(reject);
+                }
+              });
+            });
+            const customPrs = await Promise.all(customPrPromies);
+            const minCustomPrs = customPrs.filter(x => x).map(pr => ({
+              title: pr.title,
+              number: pr.number,
+              url: pr.html_url,
+            }));
 
-            const customPrs = await github.rest.search.issuesAndPullRequests({
-              q: prQuery,
-              sort: "updated",
-              order: "asc",
-              per_page: 100
-            }).then(res => res.data.items);
-
-            for (const pr of prs.concat(customPrs)) {
-              console.log(`Will merge "${pr.title}" ${pr.pull_request.html_url}`);
+            for (const pr of minPrs.concat(minCustomPrs)) {
+              console.log(`Will merge "${pr.title}" ${pr.url}`);
               let pn = pr.number;
               await myExec(`git fetch "https://github.com/yuzu-emu/yuzu.git" "pull/${pn}/head:pr-${pn}" -f --no-recurse-submodules`);
               await myExec(`git merge --squash "pr-${pn}"`);
