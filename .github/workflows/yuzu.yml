@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       repo_source:
-        description: 'the source repository for the build. the default "yuzu-emu/yuzu" builds EA, "yuzu-emu/yuzu-mainline" builds mainline; any other repo fork can be used'
+        description: 'source repo for the build'
         required: true
         default: 'yuzu-emu/yuzu'
         type: string
