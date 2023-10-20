@@ -10,7 +10,7 @@ on:
         default: 'yuzu-emu/yuzu'
         type: string
       custom_prs:
-        description: 'comma separated list of PR IDs'
+        description: 'comma separated list of additional PR IDs'
         required: false
         type: string
       optimization_flag:
