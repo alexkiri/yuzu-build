@@ -91,7 +91,7 @@ jobs:
           script: |
             const myExec = async (command) => await exec.getExecOutput('"C:\\Program Files\\Git\\bin\\bash.exe"',["-c",command],{silent: true}).then(result => result.stdout.trim()).catch(err => {console.log(err) ; return false })
             const prs = await github.rest.search.issuesAndPullRequests({
-              q: "type:pr+is:open+draft:false+repo:yuzu-emu/yuzu+label:early-access-merge,mainline-merge+-label:android,android-merge",
+              q: "type:pr+is:open+draft:false+repo:yuzu-emu/yuzu+label:early-access-merge,mainline-merge",
               sort: "updated",
               order: "asc",
               per_page: 100
