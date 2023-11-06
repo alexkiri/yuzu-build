@@ -83,7 +83,10 @@ jobs:
           git config --global rebase.autoStash true
           git config --global fetch.prune true
       - name: Install Vulkan SDK
-        run: .\.ci\scripts\windows\install-vulkan-sdk.ps1
+        uses: humbletim/install-vulkan-sdk@v1.1.1
+        with:
+          version: 1.3.250.1
+          cache: true
       - name: Merge EA PRs and additional ${{ inputs.custom_prs }}
         if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
         uses: actions/github-script@v6
