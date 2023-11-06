@@ -171,6 +171,7 @@ jobs:
       - name: Restore or setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
+          vcpkgDirectory: '${{ github.workspace }}/externals/vcpkg'
           vcpkgJsonGlob: 'vcpkg.json'
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
