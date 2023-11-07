@@ -1,5 +1,4 @@
-name: 'yuzu'
-run-name: 'Build yuzu'
+name: Build yuzu
 
 on:
   workflow_dispatch:
