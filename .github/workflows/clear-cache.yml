@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Clear cache
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const caches = await github.rest.actions.getActionsCacheList({

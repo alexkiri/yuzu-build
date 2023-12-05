@@ -65,8 +65,6 @@ jobs:
     name: 'build (windows, msvc)'
 
     runs-on: windows-2022
-    env:
-      ZSTD_CLEVEL: 1
     steps:
       - name: Checkout ${{ inputs.repo_source }}
         uses: actions/checkout@v4
@@ -82,13 +80,13 @@ jobs:
           git config --global rebase.autoStash true
           git config --global fetch.prune true
       - name: Install Vulkan SDK
-        uses: humbletim/install-vulkan-sdk@v1.1.1
+        uses: alexkiri/install-vulkan-sdk@main
         with:
           version: 1.3.250.1
           cache: true
       - name: Merge EA PRs and additional ${{ inputs.custom_prs }}
         if: ${{ inputs.repo_source != 'yuzu-emu/yuzu-mainline' }}
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with: 
           script: |
             const myExec = async (command) => await exec.getExecOutput('"C:\\Program Files\\Git\\bin\\bash.exe"',["-c",command],{silent: true}).then(result => result.stdout.trim()).catch(err => {console.log(err) ; return false })
@@ -178,16 +176,15 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
       - name: Configure
-        env:
-          CC: cl.exe
-          CXX: cl.exe
         run: |
           glslangValidator --version
           mkdir build -ErrorAction SilentlyContinue
-          cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="${{inputs.yuzu_use_qt_web_engine}}" -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="${{inputs.use_discord_presence}}" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION=${{ inputs.repo_source == 'yuzu-emu/yuzu-mainline' && 'mainline' || 'early-access' }} -DGIT_BRANCH=${{ inputs.repo_source }} -DCMAKE_BUILD_TYPE=Release -DENABLE_CUBEB="${{inputs.enable_cubeb}}" -DENABLE_LIBUSB="${{inputs.enable_libusb}}" -DENABLE_WEB_SERVICE="${{inputs.enable_web_service}}" -DYUZU_ROOM="${{inputs.yuzu_room}}" 
+          cmake . -B build -GNinja -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DYUZU_ENABLE_LTO=ON -DYUZU_USE_BUNDLED_QT=1 -DYUZU_USE_BUNDLED_SDL2=1 -DYUZU_USE_QT_WEB_ENGINE="${{inputs.yuzu_use_qt_web_engine}}" -DYUZU_TESTS=OFF -DUSE_DISCORD_PRESENCE="${{inputs.use_discord_presence}}" -DENABLE_QT_TRANSLATION=ON -DDISPLAY_VERSION=${{ inputs.repo_source == 'yuzu-emu/yuzu-mainline' && 'mainline' || 'early-access' }} -DGIT_BRANCH=${{ inputs.repo_source }} -DCMAKE_BUILD_TYPE=Release -DENABLE_CUBEB="${{inputs.enable_cubeb}}" -DENABLE_LIBUSB="${{inputs.enable_libusb}}" -DENABLE_WEB_SERVICE="${{inputs.enable_web_service}}" -DYUZU_ROOM="${{inputs.yuzu_room}}"
       - name: Build
         run: cmake --build build -j $env:NUMBER_OF_PROCESSORS
       - name: Pack 7z
+        env:
+          ZSTD_CLEVEL: 1
         run: |
           .\.ci\scripts\windows\upload.ps1
           cd artifacts
